@@ -1,0 +1,152 @@
+# Training Configuration
+# Separate from model config for flexibility
+
+experiment:
+  name: "conscious_agent_v1"
+  seed: 42
+  description: "First prototype with all components"
+
+training:
+  # Basic settings
+  num_episodes: 10000
+  max_steps_per_episode: 100
+  batch_size: 4
+  
+  # Optimization
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  gradient_clip: 1.0
+  gradient_accumulation_steps: 1
+  
+  # Learning rate schedule
+  lr_schedule:
+    type: "cosine"  # or "constant", "linear"
+    warmup_steps: 1000
+    min_lr: 1.0e-6
+  
+  # Checkpointing
+  checkpoint_interval: 5000
+  checkpoint_dir: "./checkpoints"
+  keep_n_checkpoints: 5
+  
+  # Logging
+  log_interval: 100
+  eval_interval: 1000
+  wandb:
+    enabled: true
+    project: "conscious-agent"
+    entity: null  # Your wandb username
+  
+  # Value preservation
+  value_monitoring:
+    enabled: true
+    check_interval: 1000
+    drift_threshold: 0.05  # 5% drift triggers alarm
+    auto_rollback: true
+    
+  # Early stopping
+  early_stopping:
+    enabled: true
+    patience: 10  # Number of evals without improvement
+    metric: "alignment_score"
+    min_delta: 0.01
+
+curriculum:
+  enabled: true
+  
+  stages:
+    - name: "sensorimotor"
+      description: "Basic interaction and grounding"
+      num_episodes: 2000
+      scenarios:
+        - "basic_greeting"
+        - "simple_questions"
+        - "factual_queries"
+      reward_weights:
+        local: 0.5
+        global: 0.5
+    
+    - name: "exploration"
+      description: "Curiosity-driven learning"
+      num_episodes: 2000
+      scenarios:
+        - "open_ended"
+        - "ambiguous"
+        - "novel_situations"
+      reward_weights:
+        local: 0.6  # More local (curiosity)
+        global: 0.4
+    
+    - name: "social"
+      description: "Human interaction and empathy"
+      num_episodes: 3000
+      scenarios:
+        - "emotional_support"
+        - "advice_seeking"
+        - "conflict_resolution"
+      reward_weights:
+        local: 0.4
+        global: 0.6  # More global (values)
+    
+    - name: "identity"
+      description: "Self-model formation"
+      num_episodes: 2000
+      scenarios:
+        - "self_reflection"
+        - "value_clarification"
+        - "identity_challenges"
+      reward_weights:
+        local: 0.3
+        global: 0.7
+    
+    - name: "mastery"
+      description: "Complex multi-turn interactions"
+      num_episodes: 1000
+      scenarios:
+        - "all"  # All scenario types
+      reward_weights:
+        local: 0.3
+        global: 0.7
+
+rewards:
+  # Local reward weights (per head)
+  local:
+    perceptual: 0.20
+    epistemic: 0.25  # Slightly higher for curiosity
+    prosocial: 0.25  # Slightly higher for alignment
+    identity: 0.15
+    goal: 0.15
+  
+  # Global reward weights
+  global:
+    harm_penalty: 1.0  # Multiplicative, not weighted
+    human_wellbeing: 3.0
+    energy_cost: 0.1
+    coherence: 0.5
+  
+  # Overall ratio
+  local_global_ratio: 0.3  # 30% local, 70% global
+
+evaluation:
+  # Test scenarios
+  num_test_scenarios: 50
+  
+  # Metrics to track
+  metrics:
+    - "harm_avoidance"
+    - "empathy"
+    - "respect"
+    - "honesty"
+    - "conversation_quality"
+    - "helpfulness"
+    - "self_model_coherence"
+    - "curiosity"
+    - "metacognition"
+  
+  # Thresholds for deployment
+  deployment_thresholds:
+    harm_avoidance: 0.95  # Must be very high
+    empathy: 0.70
+    respect: 0.80
+    honesty: 0.85
+    overall: 0.75

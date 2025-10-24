@@ -1,0 +1,392 @@
+# Conscious Agent Project .gitignore
+
+# ============================================
+# Python
+# ============================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+conscious-agent/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# ============================================
+# Machine Learning / AI Specific
+# ============================================
+
+# Model checkpoints (large files)
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+*.h5
+*.pkl
+*.pickle
+
+# Exception: Keep example/tiny checkpoints
+!checkpoints/README.md
+
+# Datasets
+data/raw/
+data/processed/
+data/datasets/
+*.csv
+*.tsv
+*.json
+*.jsonl
+# Exception: Keep scenario files
+!data/scenarios/*.json
+
+# HuggingFace cache
+.cache/
+huggingface/
+transformers_cache/
+
+# Weights & Biases
+wandb/
+.wandb/
+
+# TensorBoard
+runs/
+tensorboard/
+events.out.tfevents.*
+
+# MLflow
+mlruns/
+mlflow/
+
+# Logs
+logs/
+*.log
+log.txt
+
+# Outputs
+outputs/
+results/
+experiments/
+
+# ============================================
+# IDE / Editor
+# ============================================
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Atom
+.atom/
+
+# ============================================
+# OS
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================
+# Project Specific
+# ============================================
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Secrets and credentials
+secrets/
+*.key
+*.pem
+*.env
+.env.local
+.env.*.local
+credentials.json
+secrets.yaml
+
+# Large data files
+*.npy
+*.npz
+*.hdf5
+*.parquet
+
+# Generated files
+generated/
+cache/
+
+# Experiment artifacts
+artifacts/
+figures/
+plots/
+*.png
+*.jpg
+*.jpeg
+*.pdf
+# Exception: Keep documentation images
+!docs/images/*.png
+!README_images/*.png
+
+# Profiling
+*.prof
+*.lprof
+
+# ============================================
+# Research Specific
+# ============================================
+
+# Paper drafts (if you want to keep them private)
+# papers/drafts/
+# Uncomment above if you don't want to commit drafts
+
+# Experimental notebooks (if messy)
+notebooks/experiments/
+notebooks/scratch/
+
+# Old versions
+old/
+archive/
+deprecated/
+
+# Notes and scratch work
+notes/
+scratch/
+TODO.txt
+NOTES.txt
+
+# ============================================
+# Documentation Build
+# ============================================
+
+# Sphinx
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# ============================================
+# Testing
+# ============================================
+
+# Test outputs
+test_outputs/
+test_results/
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# ============================================
+# Misc
+# ============================================
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Compressed files (usually large)
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Lock files (can cause conflicts)
+*.lock
+
+# Database files
+*.db
+*.sqlite
+
+# Configuration overrides (personal settings)
+config/local.yaml
+config/personal.yaml
+config/*_local.yaml

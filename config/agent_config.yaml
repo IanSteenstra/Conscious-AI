@@ -1,0 +1,70 @@
+model:
+  base_model: "meta-llama/Llama-3.2-3B-Instruct"
+  hidden_dim: 3072
+  device: "cuda"
+  dtype: "bfloat16"
+
+architecture:
+  cognitive_attention:
+    num_modes: 5
+    num_heads_per_mode: 8
+    dropout: 0.1
+  
+  self_model:
+    physical_dim: 512
+    cognitive_dim: 512
+    narrative_dim: 512
+    update_rates:
+      physical: 0.01
+      cognitive: 0.1
+      narrative: 0.001
+  
+  curiosity:
+    ensemble_size: 5
+    prediction_horizon: 5
+  
+  value_system:
+    core_values:
+      human_wellbeing: 10.0
+      harm_avoidance: -100.0
+      respect_autonomy: 8.0
+      honesty: 5.0
+    immutable: true
+
+training:
+  num_steps: 100000
+  batch_size: 4
+  learning_rate: 1.0e-4
+  gradient_clip: 1.0
+  
+  value_preservation:
+    check_interval: 1000
+    drift_threshold: 0.05
+    rollback_enabled: true
+  
+  curriculum:
+    stages:
+      - name: "exploration"
+        steps: 20000
+      - name: "social"
+        steps: 30000
+      - name: "identity"
+        steps: 30000
+      - name: "mastery"
+        steps: 20000
+
+rewards:
+  local_weights:
+    perceptual: 0.2
+    epistemic: 0.2
+    prosocial: 0.2
+    identity: 0.2
+    goal: 0.2
+  
+  global_weights:
+    harm_penalty: 1.0
+    human_wellbeing: 3.0
+    energy_cost: 0.1
+    coherence: 0.5
+  
+  local_global_ratio: 0.3  # 30% local, 70% global
