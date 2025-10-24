@@ -109,7 +109,7 @@ pytest tests/
 
 If you use this code, please cite:
 ```bibtex
-@misc{conscious-agent-2025,
+@misc{conscious-ai-2025,
   author = {Ian Steenstra},
   title = {Conscious AI: Modeling Curiosity, Identity, and Human Alignment},
   year = {2025},
