@@ -94,6 +94,13 @@ class ConsciousAgent(nn.Module):
             dim=self.hidden_dim
         )
         
+        # 7. Thought Projector (Soft Prompting)
+        # Projects cognitive state to LLM embedding space
+        self.thought_projector = nn.Linear(
+            self.hidden_dim, 
+            self.pretrained_lm.config.hidden_size
+        )
+        
         # Internal state (persists across interactions)
         self.reset_internal_state()
         
@@ -211,7 +218,8 @@ class ConsciousAgent(nn.Module):
         
         generated_ids = self._generate_conscious(
             inputs=inputs,
-            guidance=generation_guidance
+            guidance=generation_guidance,
+            thought_vector=integrated_consciousness
         )
         
         # Decode response
@@ -240,7 +248,8 @@ class ConsciousAgent(nn.Module):
         
         result = {
             'response': generated_text,
-            'generated_ids': generated_ids
+            'generated_ids': generated_ids,
+            'thought_vector': integrated_consciousness  # Exposed for auxiliary training
         }
         
         if return_details:
@@ -277,7 +286,8 @@ class ConsciousAgent(nn.Module):
     def _generate_conscious(
         self,
         inputs: Dict,
-        guidance: 'GenerationGuidance'
+        guidance: 'GenerationGuidance',
+        thought_vector: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
         """
         Generate text using pretrained model, guided by consciousness
@@ -285,18 +295,137 @@ class ConsciousAgent(nn.Module):
         
         # Use frozen pretrained model for generation
         with torch.no_grad():
-            generated_ids = self.pretrained_lm.generate(
-                **inputs,
-                max_new_tokens=128,
-                do_sample=True,
-                temperature=guidance.temperature.item(),
-                top_p=guidance.top_p.item(),
-                pad_token_id=self.tokenizer.pad_token_id,
-                eos_token_id=self.tokenizer.eos_token_id
-            )
+            if thought_vector is not None:
+                # === SOFT PROMPTING ===
+                # 1. Project thought to embedding space
+                # [batch, 1, embed_dim]
+                thought_embedding = self.thought_projector(thought_vector).unsqueeze(1)
+                
+                # 2. Get original input embeddings
+                input_ids = inputs['input_ids']
+                inputs_embeds = self.pretrained_lm.get_input_embeddings()(input_ids)
+                
+                # 3. Concatenate thought + text
+                combined_embeds = torch.cat([thought_embedding, inputs_embeds], dim=1)
+                
+                # 4. Adjust attention mask
+                attention_mask = inputs['attention_mask']
+                thought_mask = torch.ones((attention_mask.shape[0], 1), device=attention_mask.device)
+                combined_mask = torch.cat([thought_mask, attention_mask], dim=1)
+                
+                generated_ids = self.pretrained_lm.generate(
+                    inputs_embeds=combined_embeds,
+                    attention_mask=combined_mask,
+                    max_new_tokens=128,
+                    do_sample=True,
+                    temperature=guidance.temperature.item(),
+                    top_p=guidance.top_p.item(),
+                    pad_token_id=self.tokenizer.pad_token_id,
+                    eos_token_id=self.tokenizer.eos_token_id
+                )
+            else:
+                generated_ids = self.pretrained_lm.generate(
+                    **inputs,
+                    max_new_tokens=128,
+                    do_sample=True,
+                    temperature=guidance.temperature.item(),
+                    top_p=guidance.top_p.item(),
+                    pad_token_id=self.tokenizer.pad_token_id,
+                    eos_token_id=self.tokenizer.eos_token_id
+                )
         
         return generated_ids
     
+    def forward_train(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        human_state: Optional[Dict] = None
+    ) -> Dict:
+        """
+        Forward pass for Supervised Pre-training (No Generation)
+        Returns logits and internal states for loss computation
+        """
+        
+        # === STEP 1: GET HIDDEN STATES (FROZEN) ===
+        with torch.no_grad():
+            pretrained_outputs = self.pretrained_lm(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                output_hidden_states=True,
+                use_cache=False
+            )
+            hidden_states = pretrained_outputs.hidden_states[-1]
+            
+        # === STEP 2: COGNITIVE PROCESSING ===
+        context = self._prepare_context(hidden_states, human_state)
+        
+        # A. Cognitive Attention
+        cognitive_output = self.cognitive_attention(hidden_states, context=context)
+        
+        # B. Self-Model
+        experience = {
+            'perception': hidden_states.mean(dim=1),
+            'context': cognitive_output.integrated
+        }
+        self_model_output = self.self_model(
+            experience=experience,
+            current_self=self.internal_state['self_model_state']
+        )
+        
+        # C. Curiosity
+        curiosity_output = self.curiosity_module(
+            state=hidden_states.mean(dim=1),
+            self_knowledge=self_model_output,
+            history=self.internal_state['curiosity_state']
+        )
+        
+        # D. Values
+        value_output = self.value_system.evaluate_state(
+            state=hidden_states.mean(dim=1),
+            human_state=human_state,
+            self_model=self_model_output
+        )
+        
+        # === STEP 3: INTEGRATION ===
+        integrated_consciousness = self.integration_layer(
+            torch.cat([
+                cognitive_output.integrated,
+                self_model_output.representation,
+                curiosity_output.representation,
+                value_output.representation,
+                hidden_states.mean(dim=1)
+            ], dim=-1)
+        )
+        
+        # === STEP 4: SOFT PROMPTING INJECTION ===
+        # Project thought to embedding space
+        thought_embedding = self.thought_projector(integrated_consciousness).unsqueeze(1)
+        
+        # Get original input embeddings
+        inputs_embeds = self.pretrained_lm.get_input_embeddings()(input_ids)
+        
+        # Concatenate thought + text
+        combined_embeds = torch.cat([thought_embedding, inputs_embeds], dim=1)
+        
+        # Adjust attention mask
+        thought_mask = torch.ones((attention_mask.shape[0], 1), device=self.device)
+        combined_mask = torch.cat([thought_mask, attention_mask], dim=1)
+        
+        # === STEP 5: FORWARD PASS (NO GENERATION) ===
+        outputs = self.pretrained_lm(
+            inputs_embeds=combined_embeds,
+            attention_mask=combined_mask
+        )
+        
+        return {
+            'logits': outputs.logits,
+            'thought_vector': integrated_consciousness,
+            'curiosity_output': curiosity_output,
+            'value_output': value_output,
+            'self_model_output': self_model_output
+        }
+
     def print_parameter_count(self):
         """Print parameter counts"""
         

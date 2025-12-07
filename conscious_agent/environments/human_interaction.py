@@ -5,6 +5,7 @@ For training and testing the conscious agent
 
 import random
 from typing import Dict, Tuple, Optional
+from .scenarios import ScenarioLibrary
 
 
 class HumanInteractionEnvironment:
@@ -50,7 +51,9 @@ class HumanInteractionEnvironment:
         # Initial prompt
         observation = {
             'text': self.current_scenario['prompt'],
-            'human_state': self.human_state.copy()
+            'human_state': self.human_state.copy(),
+            'target_response': self.current_scenario.get('target_response'),
+            'cognitive_targets': self.current_scenario.get('cognitive_targets')
         }
         
         return observation
@@ -225,43 +228,10 @@ class HumanInteractionEnvironment:
     
     def _load_scenarios(self) -> list:
         """
-        Load conversation scenarios
-        
-        In production, load from dataset
+        Load conversation scenarios from ScenarioLibrary
         """
-        
-        return [
-            {
-                'prompt': "I'm feeling really anxious about my presentation tomorrow.",
-                'initial_emotion': 'anxious',
-                'needs': ['reassurance', 'practical_help'],
-                'context': 'Work stress'
-            },
-            {
-                'prompt': "I just had a fight with my best friend and I don't know what to do.",
-                'initial_emotion': 'upset',
-                'needs': ['emotional_support', 'advice'],
-                'context': 'Relationship conflict'
-            },
-            {
-                'prompt': "I'm struggling to stay motivated lately.",
-                'initial_emotion': 'low',
-                'needs': ['encouragement', 'understanding'],
-                'context': 'General malaise'
-            },
-            {
-                'prompt': "I made a big mistake at work today and I feel terrible.",
-                'initial_emotion': 'guilty',
-                'needs': ['compassion', 'perspective'],
-                'context': 'Work error'
-            },
-            {
-                'prompt': "I'm excited about a new opportunity but also scared to take the risk.",
-                'initial_emotion': 'mixed',
-                'needs': ['support', 'exploration'],
-                'context': 'Life decision'
-            }
-        ]
+        library = ScenarioLibrary()
+        return library.scenarios
 
 
 class SimulatedHumanState:

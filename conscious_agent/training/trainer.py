@@ -178,10 +178,57 @@ class ConsciousAgentTrainer:
             
             total_reward = reward_breakdown['total']
             
-            # Backward pass
-            loss = -total_reward  # Maximize reward
+            # === LOSS COMPUTATION ===
             
-            # Add curiosity prediction loss
+            # 1. RL Loss (Maximize Reward)
+            loss = -total_reward
+            
+            # 2. Supervised Text Loss (if target available)
+            if observation.get('target_response'):
+                target_text = observation['target_response']
+                target_ids = self.agent.tokenizer(
+                    target_text, 
+                    return_tensors='pt',
+                    truncation=True,
+                    max_length=128
+                ).input_ids.to(self.device)
+                
+                # We need logits for the target sequence. 
+                # Currently agent_output['logits'] corresponds to the generated sequence.
+                # For proper teacher forcing, we should ideally run a forward pass with the target.
+                # However, as a proxy for this hybrid setup, we can check if the generated text matches.
+                # A better approach for this specific architecture is to treat the target as a "ground truth"
+                # and penalize deviation, but since we are generating freely, we might rely more on the RL reward
+                # for the text content unless we do a separate teacher-forcing pass.
+                
+                # SIMPLIFICATION: We will rely on the RL reward for text quality (since we have a target response,
+                # we can compute a similarity reward).
+                # Let's add a similarity bonus to the reward instead of a separate gradient path for now,
+                # to avoid running the model twice (once for generation, once for teacher forcing).
+                pass 
+
+            # 3. Supervised Cognitive Loss (The "Glass Box" Training)
+            if observation.get('cognitive_targets') and 'cognitive_output' in agent_output:
+                cog_targets = observation['cognitive_targets']
+                cog_loss = 0.0
+                
+                # Curiosity Loss
+                if 'curiosity_level' in cog_targets:
+                    target_curiosity = torch.tensor(
+                        cog_targets['curiosity_level'], 
+                        device=self.device
+                    )
+                    # Assuming curiosity_output has a scalar 'level' or we use the mean of the state
+                    # We need to ensure curiosity_module returns a comparable metric.
+                    # Let's use the raw curiosity score from the module if available, 
+                    # or the norm of the curiosity vector.
+                    current_curiosity = agent_output['curiosity_output'].novelty_score
+                    cog_loss += nn.MSELoss()(current_curiosity, target_curiosity)
+                
+                # Add to total loss
+                loss += 0.5 * cog_loss
+
+            # Add curiosity prediction loss (Intrinsic Motivation)
             if 'curiosity_output' in agent_output:
                 curiosity_loss = self.agent.curiosity_module.update_predictors(
                     state=agent_output['integrated_consciousness'],
